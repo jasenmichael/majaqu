@@ -1,49 +1,46 @@
 {
-  "repos": {
-    "main": "",
-    "frontend": "",
-    "backend": ""
-  },
-  "options": {
-    "single_repo": true,
-    "db": "postgress",
-    "dependencies": ["write-json-file", "load-json-file", "inquirer", "ora"],
-    "scripts": {
-      "predev": "npm run configEnv",
-      "dev": "npm run develop",
-      "develop": "(npm run develop:frontend) & npm run develop:backend",
-      "develop:frontend": "cd frontend && npm run dev",
-      "develop:backend": "cd backend && npm run develop --no-build",
-      "build": "(npm run build:frontend) & npm run build:backend",
-      "build:frontend": "cd backend && npm run build",
-      "build:backend": "cd backend && npm run build",
-      "start": "",
-      "start:frontend": "",
-      "start:backend": "",
-      "configEnv": "echo configing env"
-    }
-  },
-  "backend": {
-    "path": "backend",
-    "env": {
-      "develop": {},
-      "staging": {},
-      "production": {}
-    },
-    "extra_packages": [
-      "dotenv",
-      "github:jasenmichael/strapi-provider-upload-sftp"
-    ],
-    "tweaks": []
-  },
-  "frontend": {
-    "path": "frontend",
-    "env": {
-      "develop": {},
-      "staging": {},
-      "production": {}
-    },
-    "extra_packages": [],
-    "tweaks": []
-  }
+	"repos": {
+		"main": "",
+		"frontend": "",
+		"backend": ""
+	},
+	"options": {
+		"single_repo": true,
+		"dependencies": [
+			"write-json-file",
+			"load-json-file",
+			"inquirer",
+			"ora",
+			"dotenv"
+		],
+		"scripts": {
+			"dev": "npm run develop",
+			"predevelop": "npm run configEnv",
+			"develop": "(npm run develop:frontend) & npm run develop:backend",
+			"develop:frontend": "cd nuxt && npm run dev",
+			"develop:backend": "cd strapi && npm run develop --no-build",
+			"build": "(npm run build:frontend) & npm run build:backend",
+			"build:frontend": "cd nuxt && npm run build",
+			"build:backend": "cd strapi && npm run build",
+			"start": "",
+			"start:frontend": "",
+			"start:backend": "",
+			"configEnv": "NODE_ENV=development node ./bin/build-env.js"
+		}
+	},
+	"backend": {
+		"path": "strapi",
+		"extra_packages": [
+			"dotenv",
+			"find-config",
+			"github:jasenmichael/strapi-provider-upload-sftp",
+			"pg"
+		],
+		"tweaks": []
+	},
+	"frontend": {
+		"path": "nuxt",
+		"extra_packages": ["@nuxtjs/dotenv", "@nuxtjs/aut"],
+		"tweaks": []
+	}
 }

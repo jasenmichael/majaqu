@@ -1,0 +1,41 @@
+{
+	"name": "majaqu",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"bin": {
+		"majaqu": "cli.js"
+	},
+	"scripts": {
+		"dev": "npm run develop",
+		"predevelop": "npm run configEnv",
+		"develop": "(npm run develop:frontend) & npm run develop:backend",
+		"develop:frontend": "cd nuxt && npm run dev",
+		"develop:backend": "cd strapi && npm run develop --no-build",
+		"build": "(npm run build:frontend) & npm run build:backend",
+		"build:frontend": "cd nuxt && npm run build",
+		"build:backend": "cd strapi && npm run build",
+		"start": "",
+		"start:frontend": "",
+		"start:backend": "",
+		"configEnv": "NODE_ENV=development node ./bin/build-env.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jasenmichael/strapux.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/jasenmichael/strapux/issues"
+	},
+	"homepage": "https://github.com/jasenmichael/strapux#readme",
+	"dependencies": {
+		"dotenv": "^8.2.0",
+		"inquirer": "^7.0.5",
+		"load-json-file": "^6.2.0",
+		"ora": "^4.0.3",
+		"write-json-file": "^4.3.0"
+	}
+}

@@ -7,16 +7,21 @@ async function strapuxInstall(projectDir, projectName) {
     // pre-configure, and create strapux.config.json
     await preConfigure(projectDir, projectName)
     const config = await readJsonFile(`${projectDir}/strapux.config.json`)
-    // install nuxt
+    
+    // install Nuxt
     await runBashScript(`${projectDir}/bin/install-nuxt.sh`, [projectDir, config.frontend.path])
-    // install frontend extra_packages
+    // install Nuxt extra_packages
+    let nuxtExtraPackages = config.frontend.extra_packages.join(' ')
+    await runBashCommand(`cd ${projectDir} && npm i ${nuxtExtraPackages}`)
 
-    // instal strapi
+    // instal Strapi
     await runBashScript(`${projectDir}/bin/install-strapi.sh`, [projectDir, config.backend.path, 'npm'])
-    // install backend extra_packages
+    // install Strapi extra_packages
+    let strapiExtraPackages = config.backend.extra_packages.join(' ')
+    await runBashCommand(`cd ${projectDir} && npm i ${strapiExtraPackages}`)
 
     // post configure
-    await postConfigure()
+    await postConfigure(projectDir, projectName)
     process.exit(0)
 }
 
