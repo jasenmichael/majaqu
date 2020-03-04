@@ -7,6 +7,7 @@
 		"majaqu": "cli.js"
 	},
 	"scripts": {
+		"install": "cd strapi && npm i && cd ../nuxt && npm i && cd ../",
 		"dev": "npm run develop",
 		"predevelop": "npm run configEnv",
 		"develop": "(npm run develop:frontend) & npm run develop:backend",
@@ -18,19 +19,19 @@
 		"start": "",
 		"start:frontend": "",
 		"start:backend": "",
-		"configEnv": "NODE_ENV=development node ./bin/build-env.js"
+		"configEnv": "node ./bin/build-env.js"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jasenmichael/strapux.git"
+		"url": "git+https://github.com/jasenmichael/majaqu.git"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"bugs": {
-		"url": "https://github.com/jasenmichael/strapux/issues"
+		"url": "https://github.com/jasenmichael/majaqu/issues"
 	},
-	"homepage": "https://github.com/jasenmichael/strapux#readme",
+	"homepage": "https://github.com/jasenmichael/majaqu#readme",
 	"dependencies": {
 		"dotenv": "^8.2.0",
 		"inquirer": "^7.0.5",
