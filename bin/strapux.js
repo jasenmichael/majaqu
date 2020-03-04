@@ -7,7 +7,7 @@ async function strapuxInstall(projectDir, projectName) {
     // pre-configure, and create strapux.config.json
     await preConfigure(projectDir, projectName)
     const config = await readJsonFile(`${projectDir}/strapux.config.json`)
-    
+
     // install Nuxt
     await runBashScript(`${projectDir}/bin/install-nuxt.sh`, [projectDir, config.frontend.path])
     // install Nuxt extra_packages
@@ -28,7 +28,13 @@ async function strapuxInstall(projectDir, projectName) {
 // functions
 async function runBashCommand(cmd) {
     // console.log('running bash command -', cmd)
-    child_process.execSync(cmd)
+    try {
+        child_process.execSync(cmd)
+        return 
+    } catch (error) {
+        // console.log(error)
+        return {error}
+    }
 }
 async function runBashScript(script, args) {
     // console.log('running bash script -', script, args.join(' '))
