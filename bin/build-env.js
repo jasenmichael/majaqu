@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 require('dotenv').config()
 const fs = require("fs")
 const {
@@ -12,10 +14,13 @@ const frontendDir = require("../strapux.config.json").frontend.path
 const backendDir = require("../strapux.config.json").backend.path
 
 // check NODE_ENV, create Nuxt and Strapi .env files
-const {
+let {
     NODE_ENV
 } = process.env
+if (NODE_ENV === undefined) NODE_ENV = 'development'
+
 let prefix = 'DEVELOPMENT_'
+console.log(`setup ${NODE_ENV} .env`)
 switch (NODE_ENV) {
     case 'development':
         buildEnv(prefix, 'nuxt')
@@ -23,16 +28,19 @@ switch (NODE_ENV) {
         break;
 
     case 'staging':
-        console.log('setup staging env')
         prefix = 'STAGING_'
+        buildEnv(prefix, 'nuxt')
+        buildEnv(prefix, 'strapi')
         break
 
     case 'production':
-        console.log('setup production env')
         prefix = 'PRODUCTION_'
+        buildEnv(prefix, 'nuxt')
+        buildEnv(prefix, 'strapi')
         break
 
     default:
+        console.log('NODE_ENV not set')
         break
 }
 

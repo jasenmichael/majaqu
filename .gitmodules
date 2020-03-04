@@ -1,6 +1,8 @@
 [submodule "nuxt"]
 	path = nuxt
 	url = git@github.com:jasenmichael/majaqu-frontend-nuxt.git
+	branch = master
 [submodule "strapi"]
 	path = strapi
 	url = git@github.com:jasenmichael/majaqu-backend-strapi.git
+	branch = master

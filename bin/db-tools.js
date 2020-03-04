@@ -10,32 +10,40 @@ const method = process.argv[2]
 const src = process.argv[3]
 const dest = process.argv[4]
 
-// clone src dest, example: npm run db:clone development production
-if (method === 'clone' && src && dest) {
-    // first we backup the destDb, before replacing it with srcDb
-    backup(dest)
-    clone(src, dest)
-}
+async function init() {
+    // clone src dest, example: npm run db:clone development production
+    if (method === 'clone' && src && dest) {
+        // first we backup the destDb, before replacing it with srcDb
+        await backup(dest)
+        await clone(src, dest)
+        process.exit(0)
+    }
 
-// backup src, example: npm run db:backup production
-if (method === 'backup' && src) backup(src) // if method backup only requires a srcDb
-if (method === 'restore' && process.argv[3]) {
-    let srcFile = process.argv[4] || ''
-    let destDb = process.argv[3]
-    restore(destDb, srcFile)
+    // backup src, example: npm run db:backup production
+    if (method === 'backup' && src) backup(src) // if method backup only requires a srcDb
+
+    if (method === 'restore' && process.argv[3]) {
+        let srcFile = process.argv[4] || ''
+        let destDb = process.argv[3]
+        await restore(destDb, srcFile)
+        process.exit(0)
+    }
 }
+init()
 
 async function clone(src, dest) {
     console.log(`clone database: ${src} >> ${dest}`)
     // build the postgress commands, envs for src and dest
     const urls = await buildDbUrl(src, dest)
     // pg_dump --dbname=postgresql://postgres:postgres@localhost:5432/majaqu > dump.sql
-    console.log(urls)
-    const srcCmd = `pg_dump --dbname=${urls.srcDbUrl}`
-    const destCmd = `psql --dbname=${urls.destDbUrl} -`
+    // console.log(urls)
+    const srcCmd = `pg_dump -F c --dbname=${urls.srcDbUrl}`
+    const destCmd = `pg_restore --dbname=${urls.destDbUrl}`
+    // const destCmd = `psql --dbname=${urls.destDbUrl} -`
     // const destCmd = `PGPASSWORD="Ia6hy9G8lscdIUry" psql -U auorab2_majaqu-71843 aurorab2_majaqu`
-    const command = `${srcCmd} | ssh ${process.env.SSH_PRODUCTION_DB_ACCESS} ${destCmd}`
+    const command = `${srcCmd} | ${destCmd}`
     console.log(command)
+    await runBashCommand(command)
 }
 
 async function backup(src) {
@@ -45,23 +53,24 @@ async function backup(src) {
 
     const backupFilename = `${process.cwd()}/db/${src}/backup-${dbName}-${Date.now()}.sql`
     console.log(`backup ${src} db: ${dbName} > ${backupFilename}`)
-    const dumpCommand = `pg_dump -C --no-owner --no-acl --dbname=${backupDbUrl} > ${backupFilename}`
-    if (src === 'development') {
-        await runBashCommand(dumpCommand)
-    } else {
-        if (process.env[`SSH_${src.toUpperCase()}_DB_ACCESS_ENABLED`]) {
-            const sshUsrHost = src === 'staging' ? process.env.SSH_STAGING_DB_ACCESS : process.env.SSH_PRODUCTION_DB_ACCESS
-            if (sshUsrHost && src === ('production' || 'staging')) {
-                const command = `ssh -C ${sshUsrHost} ${dumpCommand}`
-                await runBashCommand(`${process.cwd()}/bin/bash-command.sh ${command}`)
-            } else {
-                console.log(`error, no SSH_${src}_DB_ACCESS env configured`)
-            }
-        } else {
-            // finally try from local even for staging/production if ssh not enabled in .env
-            runBashCommand(dumpCommand)
-        }
-    }
+    const dumpCommand = `pg_dump -C --dbname=${backupDbUrl} > ${backupFilename}`
+    await runBashCommand(dumpCommand)
+    // if (src === 'development') {
+    //     await runBashCommand(dumpCommand)
+    // } else {
+    //     if (process.env[`SSH_${src.toUpperCase()}_DB_ACCESS_ENABLED`]) {
+    //         const sshUsrHost = src === 'staging' ? process.env.SSH_STAGING_DB_ACCESS : process.env.SSH_PRODUCTION_DB_ACCESS
+    //         if (sshUsrHost && src === ('production' || 'staging')) {
+    //             const command = `ssh -C ${sshUsrHost} ${dumpCommand}`
+    //             await runBashCommand(`${process.cwd()}/bin/bash-command.sh ${command}`)
+    //         } else {
+    //             console.log(`error, no SSH_${src}_DB_ACCESS env configured`)
+    //         }
+    //     } else {
+    //         // finally try from local even for staging/production if ssh not enabled in .env
+    //         runBashCommand(dumpCommand)
+    //     }
+    // }
 }
 
 function restore(destDb, srcFile) {

@@ -9,7 +9,7 @@
 	"scripts": {
 		"install": "git submodule update && cd strapi && npm i && cd ../nuxt && npm i && cd ../",
 		"dev": "npm run develop",
-		"predevelop": "npm run configEnv",
+		"predevelop": "npm run config-env",
 		"develop": "(npm run develop:frontend) & npm run develop:backend",
 		"develop:frontend": "cd nuxt && npm run dev",
 		"develop:backend": "cd strapi && npm run develop --no-build",
@@ -19,7 +19,13 @@
 		"start": "",
 		"start:frontend": "",
 		"start:backend": "",
-		"configEnv": "node ./bin/build-env.js"
+		"config-env": "node ./bin/build-env.js",
+		"generate-env:development": "NODE_ENV=development bin/build-env.js && mv strapi/.env strapi-development.env",
+		"generate-env:staging": "NODE_ENV=staging bin/build-env.js && mv strapi/.env strapi-staging.env",
+		"generate-env:production": "NODE_ENV=production bin/build-env.js && mv strapi/.env strapi-production.env",
+		"db:clone": "node bin/db-tools.js clone",
+		"db:backup": "node bin/db-tools.js backup",
+		"db:import": "node bin/db-tools.js import"
 	},
 	"repository": {
 		"type": "git",
