@@ -7,7 +7,7 @@
 		"majaqu": "cli.js"
 	},
 	"scripts": {
-		"install": "cd strapi && npm i && cd ../nuxt && npm i && cd ../",
+		"install": "git submodule update && cd strapi && npm i && cd ../nuxt && npm i && cd ../",
 		"dev": "npm run develop",
 		"predevelop": "npm run configEnv",
 		"develop": "(npm run develop:frontend) & npm run develop:backend",
