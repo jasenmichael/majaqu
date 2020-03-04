@@ -9,10 +9,10 @@ strapux.config.json
 **/.sql
 
 
-backend
-frontend
-nuxt
-strapi
+# backend
+# frontend
+# nuxt
+# strapi
 
 !bin/configs/nuxt
 !bin/configs/strapi
