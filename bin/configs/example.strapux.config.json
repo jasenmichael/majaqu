@@ -14,19 +14,27 @@
 			"dotenv"
 		],
 		"scripts": {
+			"install": "git submodule update && cd strapi && npm i && cd ../nuxt && npm i && cd ../",
 			"dev": "npm run develop",
-			"predevelop": "npm run configEnv",
-			"develop": "(npm run develop:frontend) & npm run develop:backend",
+			"predevelop": "npm run config-env",
+			"develop": "(npm run develop:backend) & npm run develop:frontend",
 			"develop:frontend": "cd nuxt && npm run dev",
 			"develop:backend": "cd strapi && npm run develop --no-build",
-			"build": "(npm run build:frontend) & npm run build:backend",
+			"config-env": "bin/build-env.js",
+			"build": "(npm run build:backend) & npm run build:frontend",
 			"build:frontend": "cd nuxt && npm run build",
 			"build:backend": "cd strapi && npm run build",
-			"start": "",
-			"start:frontend": "",
-			"start:backend": "",
-			"configEnv": "NODE_ENV=development node ./bin/build-env.js"
-		}
+			"deploy": "",
+			"deploy:frontend": "",
+			"deploy:backend": "",
+			"generate-env:development": "NODE_ENV=development bin/build-env.js && mv strapi/.env strapi-development.env",
+			"generate-env:staging": "NODE_ENV=staging bin/build-env.js && mv strapi/.env strapi-staging.env",
+			"generate-env:production": "NODE_ENV=production bin/build-env.js && mv strapi/.env strapi-production.env",
+			"db:clone": "bin/db-tools.js clone",
+			"db:backup": "bin/db-tools.js backup",
+			"db:import": "bin/db-tools.js import",
+			"db:rollback": "bin/db-tools.js rollback"
+		},
 	},
 	"backend": {
 		"path": "strapi",
