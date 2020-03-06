@@ -9,7 +9,8 @@ strapux.config.json
 !bin.configs/example.env
 *.sql
 **/.sql
-
+*.dump
+**/.dump
 
 !bin/configs/nuxt
 !bin/configs/strapi

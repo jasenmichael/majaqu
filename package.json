@@ -10,22 +10,22 @@
 		"install": "git submodule update && cd strapi && npm i && cd ../nuxt && npm i && cd ../",
 		"dev": "npm run develop",
 		"predevelop": "npm run config-env",
-		"develop": "(npm run develop:frontend) & npm run develop:backend",
+		"develop": "(npm run develop:backend) & npm run develop:frontend",
 		"develop:frontend": "cd nuxt && npm run dev",
 		"develop:backend": "cd strapi && npm run develop --no-build",
-		"build": "(npm run build:frontend) & npm run build:backend",
+		"config-env": "bin/build-env.js",
+		"build": "(npm run build:backend) & npm run build:frontend",
 		"build:frontend": "cd nuxt && npm run build",
 		"build:backend": "cd strapi && npm run build",
-		"start": "",
-		"start:frontend": "",
-		"start:backend": "",
-		"config-env": "node ./bin/build-env.js",
+		"deploy": "",
+		"deploy:frontend": "",
+		"deploy:backend": "",
 		"generate-env:development": "NODE_ENV=development bin/build-env.js && mv strapi/.env strapi-development.env",
 		"generate-env:staging": "NODE_ENV=staging bin/build-env.js && mv strapi/.env strapi-staging.env",
 		"generate-env:production": "NODE_ENV=production bin/build-env.js && mv strapi/.env strapi-production.env",
-		"db:clone": "node bin/db-tools.js clone",
-		"db:backup": "node bin/db-tools.js backup",
-		"db:import": "node bin/db-tools.js import"
+		"db:clone": "bin/db-tools.js clone",
+		"db:backup": "bin/db-tools.js backup",
+		"db:import": "bin/db-tools.js import"
 	},
 	"repository": {
 		"type": "git",
@@ -41,8 +41,10 @@
 	"dependencies": {
 		"dotenv": "^8.2.0",
 		"inquirer": "^7.0.5",
+		"knex": "^0.20.10",
 		"load-json-file": "^6.2.0",
 		"ora": "^4.0.3",
+		"pg": "^7.18.2",
 		"write-json-file": "^4.3.0"
 	}
 }

@@ -1,10 +1,17 @@
+#!/usr/bin/env node
+
 require('dotenv').config()
+const fs = require("fs")
+const util = require('util')
+const readdir = util.promisify(fs.readdir)
+
 const {
     runBashCommand,
-    runBashScript
 } = require('./strapux')
+
+const checkDbAccess = require('./check-db-access').checkDbAccess
+const ora = require('ora')
 const envs = process.env
-const keys = Object.keys(envs)
 
 const method = process.argv[2]
 const src = process.argv[3]
@@ -22,102 +29,148 @@ async function init() {
     // backup src, example: npm run db:backup production
     if (method === 'backup' && src) backup(src) // if method backup only requires a srcDb
 
-    if (method === 'restore' && process.argv[3]) {
-        let srcFile = process.argv[4] || ''
-        let destDb = process.argv[3]
-        await restore(destDb, srcFile)
-        process.exit(0)
+    if (method === 'import' && src) {
+        const uri = await getDbUri(src)
+        let file = dest
+        const srcAccess = await checkDbAccess(uri)
+        if (file === 'latest') {
+            file = await getLatestDump(src)
+        }
+        if (!file && src && srcAccess) {
+            // prompt for file
+            const inquirer = require("inquirer")
+            const backupInputQ = [{
+                type: "list",
+                name: "src",
+                message: "Import dump from backup or input file path?",
+                default: "backup",
+                choices: ["backup", "input"]
+            }]
+            console.log('')
+            let result = await inquirer.prompt(backupInputQ)
+            // console.log(result)
+            if (result.src === 'input') {
+                const fileSelectQ = [{
+                    type: "input",
+                    name: "file",
+                    validate: function (input) {
+                        if (!fs.existsSync(input)) {
+                            console.log(`\r\n${input}\r\n does not exist, re-enter`)
+                            // process.exit(1)
+                        } else {
+                            return true
+                        }
+
+                    },
+                    message: "Import dump from backup or input file path?",
+                }]
+                file = await inquirer.prompt(fileSelectQ).then(res => res.file)
+                console.log(file)
+            } else {
+                // backup selected, prompt to select folder
+                let selectBackupImportFolderQ = [{
+                    type: "list",
+                    name: "folder",
+                    message: "Select folder from backups to import from",
+                    default: "development",
+                    choices: ["development", "staging", "production"]
+                }]
+                let selectedFolder = await inquirer.prompt(selectBackupImportFolderQ).then(res => res.folder)
+                let choices = await (await readdir(`${process.cwd()}/db/${selectedFolder}`)).filter(file => file.includes('.dump'))
+                let selectFileQ = [{
+                    type: "list",
+                    name: "dump",
+                    message: "Select a dump to import",
+                    default: choices[0],
+                    choices: choices
+                }]
+                let selectedDumpFile = await inquirer.prompt(selectFileQ).then(res => res.dump)
+                console.log(selectedDumpFile)
+                file = `${process.cwd()}/db/${src}/${selectedDumpFile}`
+            }
+            // process.exit(0)
+        }
+        console.log(uri, file)
+        importDbFromFile(uri, file)
     }
 }
 init()
 
 async function clone(src, dest) {
-    console.log(`clone database: ${src} >> ${dest}`)
-    // build the postgress commands, envs for src and dest
-    const urls = await buildDbUrl(src, dest)
-    // pg_dump --dbname=postgresql://postgres:postgres@localhost:5432/majaqu > dump.sql
-    // console.log(urls)
-    const srcCmd = `pg_dump -F c --dbname=${urls.srcDbUrl}`
-    const destCmd = `pg_restore --dbname=${urls.destDbUrl}`
-    // const destCmd = `psql --dbname=${urls.destDbUrl} -`
-    // const destCmd = `PGPASSWORD="Ia6hy9G8lscdIUry" psql -U auorab2_majaqu-71843 aurorab2_majaqu`
+    let spinner = ora(`Clone DB: ${src} >> ${dest} `)
+    spinner.start()
+    // console.log(`cloneing database: ${src} >> ${dest}`)
+    const srcDbUri = await getDbUri(src)
+    const destDbUri = await getDbUri(dest)
+    const srcAccess = await checkDbAccess(srcDbUri)
+    const destAccess = await checkDbAccess(destDbUri)
+    if (!srcAccess || !destAccess) {
+        spinner.stop()
+        process.exit(1)
+    }
+    const srcCmd = `pg_dump -Fc --no-acl --no-owner --dbname=${srcDbUri}`
+    const destCmd = `pg_restore --verbose --clean --no-acl --no-owner --dbname=${destDbUri}`
     const command = `${srcCmd} | ${destCmd}`
-    console.log(command)
     await runBashCommand(command)
+    spinner.stop()
+    console.log(command)
+    process.exit(0)
 }
 
 async function backup(src) {
-    const dbUrls = await buildDbUrl(src)
-    const backupDbUrl = dbUrls.srcDbUrl
-    const dbName = backupDbUrl.split('/').pop()
+    let spinner = ora(`Checking ${src} DB Access: `)
+    spinner.start()
+    const backupDbUri = await getDbUri(src)
+    const dbName = backupDbUri.split('/').pop()
+    let dbAccess = await checkDbAccess(backupDbUri)
+    if (!dbAccess) {
+        process.exit(1)
+    }
+    spinner.stop()
+    spinner = ora(`Backing up ${src} DB: ${dbName} `)
+    spinner.start()
+    const backupFilename = `${process.cwd()}/db/${src}/backup-${dbName}-${Date.now()}.dump`
 
-    const backupFilename = `${process.cwd()}/db/${src}/backup-${dbName}-${Date.now()}.sql`
-    console.log(`backup ${src} db: ${dbName} > ${backupFilename}`)
-    const dumpCommand = `pg_dump -C --dbname=${backupDbUrl} > ${backupFilename}`
+    const dumpCommand = `pg_dump -Fc --no-acl --no-owner --dbname=${backupDbUri} > ${backupFilename}`
     await runBashCommand(dumpCommand)
-    // if (src === 'development') {
-    //     await runBashCommand(dumpCommand)
-    // } else {
-    //     if (process.env[`SSH_${src.toUpperCase()}_DB_ACCESS_ENABLED`]) {
-    //         const sshUsrHost = src === 'staging' ? process.env.SSH_STAGING_DB_ACCESS : process.env.SSH_PRODUCTION_DB_ACCESS
-    //         if (sshUsrHost && src === ('production' || 'staging')) {
-    //             const command = `ssh -C ${sshUsrHost} ${dumpCommand}`
-    //             await runBashCommand(`${process.cwd()}/bin/bash-command.sh ${command}`)
-    //         } else {
-    //             console.log(`error, no SSH_${src}_DB_ACCESS env configured`)
-    //         }
-    //     } else {
-    //         // finally try from local even for staging/production if ssh not enabled in .env
-    //         runBashCommand(dumpCommand)
-    //     }
-    // }
+    spinner.stop()
+    try {
+        if (fs.existsSync(backupFilename)) {
+            //file 
+            let stats = await fs.statSync(backupFilename)
+            if (stats.size > 0) {
+                console.log(`${src} DB backed up to: ${backupFilename}`)
+            } else {
+                console.log('empty file, deleting')
+                await runBashCommand(`rm -f ${backupFilename}`)
+
+            }
+        }
+    } catch (err) {
+        console.log(`unable to backup db\r\n error: ${err}`)
+    }
 }
 
-function restore(destDb, srcFile) {
-    console.log('restoring..', srcFile, 'to', destDb)
+function importDbFromFile(dbUri, file) {
+    console.log('importing..', file, 'to', dbUri)
+    runBashCommand(`pg_restore  --verbose --clean --no-acl --no-owner --dbname=${dbUri} ${file}`)
 }
 
-async function buildDbUrl(src, dest = undefined) {
-    let config = {
-        srcConfig: {},
-        destConfig: {}
-    }
-    const includes = [`STRAPI_${src.toUpperCase()}_DATABASE_`]
-    if (dest) {
-        includes.push(`STRAPI_${dest.toUpperCase()}_DATABASE_`)
-    }
-    keys.forEach(async (key) => {
-        await includes.forEach(i => {
-            if (key.includes(i) && key.includes(`${src.toUpperCase()}`)) {
-                // console.log(`${key}=${envs[key]}`)
-                config.srcConfig[key] = envs[key]
-            }
-            if (key.includes(i) && dest !== undefined && key.includes(`${dest.toUpperCase()}`)) {
-                // console.log(`${key}=${envs[key]}`)
-                config.destConfig[key] = envs[key]
-            }
-        })
-    })
+async function getDbUri(environment) {
+    let env = environment.toUpperCase()
+    const srcHost = envs[`STRAPI_${env}_DATABASE_HOST`]
+    const srcPort = envs[`STRAPI_${env}_DATABASE_PORT`]
+    const srcDb = envs[`STRAPI_${env}_DATABASE_NAME`]
+    const srcUsr = envs[`STRAPI_${env}_DATABASE_USERNAME`]
+    const srcPass = envs[`STRAPI_${env}_DATABASE_PASSWORD`]
+    return `postgresql://${srcUsr}:${srcPass}@${srcHost}:${srcPort}/${srcDb}`
+}
 
-    const dbUrls = {}
-    if (src && config.srcConfig) {
-        const srcHost = config.srcConfig[`STRAPI_${src.toUpperCase()}_DATABASE_HOST`]
-        const srcPort = config.srcConfig[`STRAPI_${src.toUpperCase()}_DATABASE_PORT`]
-        const srcDb = config.srcConfig[`STRAPI_${src.toUpperCase()}_DATABASE_NAME`]
-        const srcUsr = config.srcConfig[`STRAPI_${src.toUpperCase()}_DATABASE_USERNAME`]
-        const srcPass = config.srcConfig[`STRAPI_${src.toUpperCase()}_DATABASE_PASSWORD`]
-        dbUrls.srcDbUrl = `postgresql://${srcUsr}:${srcPass}@${srcHost}:${srcPort}/${srcDb}`
-        // dbUrls.srcDbUrl = `--username=${srcUsr} --${srcPass}@${srcHost}:${srcPort}/${srcDb}`
-    }
-    if (dest && config.destConfig !== {}) {
-        // build destDbUrl
-        const destHost = config.destConfig[`STRAPI_${dest.toUpperCase()}_DATABASE_HOST`]
-        const destPort = config.destConfig[`STRAPI_${dest.toUpperCase()}_DATABASE_PORT`]
-        const destDb = config.destConfig[`STRAPI_${dest.toUpperCase()}_DATABASE_NAME`]
-        const destUsr = config.destConfig[`STRAPI_${dest.toUpperCase()}_DATABASE_USERNAME`]
-        const destPass = config.destConfig[`STRAPI_${dest.toUpperCase()}_DATABASE_PASSWORD`]
-        dbUrls.destDbUrl = `postgresql://${destUsr}:${destPass}@${destHost}:${destPort}/${destDb}`
-        // dbUrls.destDbUrl = `postgresql://${destUsr}:${destPass}@${destHost}:${destPort}/${destDb}`
-    }
-    return dbUrls
+async function getLatestDump(environment) {
+    console.log("get latest dump for:", environment)
+    let files = (await readdir(`${process.cwd()}/db/${environment}`)).filter(file=>file.includes('.dump')).sort().reverse()
+    let file = `${process.cwd()}/db/${environment}/${files[0]}`
+    console.log(file)
+    return file
+    // process.exit(0)
 }

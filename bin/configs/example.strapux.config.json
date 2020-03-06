@@ -40,7 +40,7 @@
 	},
 	"frontend": {
 		"path": "nuxt",
-		"extra_packages": ["@nuxtjs/dotenv", "@nuxtjs/aut"],
+		"extra_packages": ["@nuxtjs/dotenv", "@nuxtjs/aut", "@nuxtjs/proxy"],
 		"tweaks": []
 	}
 }
