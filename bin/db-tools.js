@@ -28,6 +28,11 @@ async function init() {
 
     // backup src, example: npm run db:backup production
     if (method === 'backup' && src) backup(src) // if method backup only requires a srcDb
+    if (method === 'rollback' && src) {
+        let file = await getLatestDump(src)
+        const uri = await getDbUri(src)
+        importDbFromFile(uri, file)
+    }
 
     if (method === 'import' && src) {
         const uri = await getDbUri(src)
@@ -86,7 +91,7 @@ async function init() {
                 }]
                 let selectedDumpFile = await inquirer.prompt(selectFileQ).then(res => res.dump)
                 console.log(selectedDumpFile)
-                file = `${process.cwd()}/db/${src}/${selectedDumpFile}`
+                file = `${process.cwd()}/db//${src}/${selectedDumpFile}`
             }
             // process.exit(0)
         }
@@ -168,7 +173,7 @@ async function getDbUri(environment) {
 
 async function getLatestDump(environment) {
     console.log("get latest dump for:", environment)
-    let files = (await readdir(`${process.cwd()}/db/${environment}`)).filter(file=>file.includes('.dump')).sort().reverse()
+    let files = (await readdir(`${process.cwd()}/db/${environment}`)).filter(file => file.includes('.dump')).sort().reverse()
     let file = `${process.cwd()}/db/${environment}/${files[0]}`
     console.log(file)
     return file

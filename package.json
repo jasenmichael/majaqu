@@ -25,7 +25,8 @@
 		"generate-env:production": "NODE_ENV=production bin/build-env.js && mv strapi/.env strapi-production.env",
 		"db:clone": "bin/db-tools.js clone",
 		"db:backup": "bin/db-tools.js backup",
-		"db:import": "bin/db-tools.js import"
+		"db:import": "bin/db-tools.js import",
+		"db:rollback": "bin/db-tools.js rollback"
 	},
 	"repository": {
 		"type": "git",
