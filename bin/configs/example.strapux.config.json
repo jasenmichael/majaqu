@@ -34,7 +34,7 @@
 			"db:backup": "bin/db-tools.js backup",
 			"db:import": "bin/db-tools.js import",
 			"db:rollback": "bin/db-tools.js rollback"
-		},
+		}
 	},
 	"backend": {
 		"path": "strapi",
